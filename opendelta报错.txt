@@ -1,0 +1,77 @@
+2024.01.05
+发现opendelta代码basemodel.py中attach()函数可能存在问题，修改源代码：
+    def attach(self, module: Optional[nn.Module]=None, reset_state_dict=True):
+        r"""Reattach the delta modules to the backbone. Note that this method can not be used to create new delta modules.
+        Instead, a :meth:`DeltaBase.detach` should precede this method.
+
+        Args:
+            module (:obj:`object`, *optional*, default to :obj:`None`): The backbone module that we
+                                                    reattach the deltas to.
+        """
+
+        if module is None:
+            module = self.backbone_model
+
+        for name, submodule in module.named_modules():
+            if hasattr(submodule, "_delta_infos"):
+                _delta_infos = getattr(submodule, "_delta_infos")
+                for _delta_info in _delta_infos:
+                    if _delta_info['delta_belong'] is not self:
+                        continue
+                    if _delta_info["state"] == "on":
+                        continue
+
+                    if _delta_info['method'] == "replace":
+                        setattr(submodule, _delta_info["child_name"], _delta_info['delta_module'])
+                    elif _delta_info['method'] == "insert_sequential":
+                        self.insert_sequential_module(module=submodule,
+                                    _delta_info=_delta_info)
+                    elif _delta_info['method'] == "insert_parallel":
+                        self.insert_parallel_module(module=submodule,
+                                    _delta_info=_delta_info)
+                    else:
+                        raise NotImplementedError
+
+                    _delta_info['state'] = "on"
+        if reset_state_dict:
+            self.set_active_state_dict(module)
+
+为：
+
+    def attach(self, module: Optional[nn.Module]=None, reset_state_dict=True):
+        r"""Reattach the delta modules to the backbone. Note that this method can not be used to create new delta modules.
+        Instead, a :meth:`DeltaBase.detach` should precede this method.
+
+        Args:
+            module (:obj:`object`, *optional*, default to :obj:`None`): The backbone module that we
+                                                    reattach the deltas to.
+        """
+
+        if module is None:
+            module = self.backbone_model
+
+        for name, submodule in module.named_modules():
+            if hasattr(submodule, "_delta_infos"):
+                _delta_infos = getattr(submodule, "_delta_infos")
+                for _delta_info in _delta_infos:
+                    if _delta_info['delta_belong'] is not self:
+                        continue
+                    if _delta_info["state"] == "on":
+                        continue
+
+                    if _delta_info['method'] == "replace":
+                        setattr(submodule, _delta_info["child_name"], _delta_info['delta_module'])
+                    elif _delta_info['method'] == "sequential":
+                        self.insert_sequential_module(module=submodule,
+                                    _delta_info=_delta_info)
+                    elif _delta_info['method'] == "parallel":
+                        self.insert_parallel_module(module=submodule,
+                                    _delta_info=_delta_info)
+                    else:
+                        raise NotImplementedError
+
+                    _delta_info['state'] = "on"
+        if reset_state_dict:
+            self.set_active_state_dict(module)
+
+并提交issue，详见https://github.com/thunlp/OpenDelta/issues/76
