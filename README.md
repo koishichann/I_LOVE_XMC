@@ -42,5 +42,8 @@ my wechat: 18381796772
 or my e-mail: 2173219824@qq.com
 2024-03-14
 
+## Git
+'https://github.com/koishichann/I_LOVE_XMC.git'
+
 
 
