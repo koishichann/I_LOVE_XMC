@@ -5,15 +5,16 @@ import matplotlib.pyplot as plt
 from utils import read_text
 import numpy as np
 
-datasets = ['eurlex-4k', 'wiki10-31k', 'amazoncat-13k']
-biases = [-1, 0, 1]  # 柱子偏移, 四个数据集为[-1.5, -0.5, 0.5, 1.5], 三个数据集为[-1, 0, 1]
+datasets = ['eurlex-4k', 'wiki10-31k', 'amazoncat-13k', 'wiki-500k']
+biases = [-1.5, -0.5, 0.5, 1.5]  # 柱子偏移, 四个数据集为[-1.5, -0.5, 0.5, 1.5], 三个数据集为[-1, 0, 1]
 divide = 200
+width = 0.2  # 柱子宽度，四个数据集为0.2，三个数据集为0.25
 word_counts = []
 ratios = []
 word_range = []
 totals = []
 for dataset in datasets:
-    datadir = os.path.join('..', '..', 'dataset', dataset, 'X.tst.txt')
+    datadir = os.path.join('dataset', dataset, 'X.tst.txt')
     texts = read_text(datadir)
     word_count = []
     ratio = []
@@ -41,7 +42,6 @@ for id, word_count in enumerate(word_counts):
     ratios.append(ratio)
 
 x = np.arange(len(word_range))
-width = 0.25
 fig = plt.figure(1)
 for id, _ in enumerate(datasets):
     plt.bar(x + width * biases[id], ratios[id], width, label=datasets[id])
@@ -50,5 +50,5 @@ plt.xlabel('text length')
 plt.title('text length distribution')
 plt.xticks(x, labels=word_range)
 plt.legend()
-fig.savefig(os.path.join('..', '..', 'word_count_figure'))
+fig.savefig(os.path.join('word_count_figure'))
 plt.show()
