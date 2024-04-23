@@ -76,6 +76,7 @@ class KG_Model(pl.LightningModule):
             self.shuffle = True
         else:
             self.shuffle = False
+
         if 'kpdrop_na' in self.type:
             self.kpdrop = 'na'
         elif 'kpdrop_nr' in self.type:
@@ -87,6 +88,18 @@ class KG_Model(pl.LightningModule):
         else:
             self.kpdrop = None
         self.kpdrop_rate = args.kpdrop_rate
+
+        if 'kpappend_na' in self.type:
+            self.kpappend = 'na'
+        elif 'kpappend_nr' in self.type:
+            self.kpappend = 'nr'
+        elif 'kpappend_a' in self.type:
+            self.kpappend = 'a'
+        elif 'kpappend_r' in self.type:
+            self.kpappend = 'r'
+        else:
+            self.kpappend = None
+        self.kpappend_rate = args.kpappend_rate
 
         if args.top_p:
             self.top_p = args.top_p
@@ -290,6 +303,10 @@ class KG_Model(pl.LightningModule):
                 train_present_label_list, train_absent_label_list, train_present_texts, train_absent_texts = utils.kpdrop(
                     present_labels=train_present_label_list, absent_labels=train_absent_label_list,
                     texts=train_texts, kpdrop_type=self.kpdrop, kpdrop_rate=self.kpdrop_rate)
+            elif self.kpappend is not None:
+                train_present_label_list, train_absent_label_list, train_present_texts, train_absent_texts = utils.kpappend(
+                    present_labels=train_present_label_list, absent_labels=train_absent_label_list,
+                    texts=train_texts, kpappend_type=self.kpappend, kpappend_rate=self.kpappend_rate)
             else:
                 train_present_texts = train_texts
                 train_absent_texts = train_texts.copy()
@@ -360,6 +377,10 @@ class KG_Model(pl.LightningModule):
                 val_present_label_list, val_absent_label_list, val_present_texts, val_absent_texts = utils.kpdrop(
                     present_labels=val_present_label_list, absent_labels=val_absent_label_list,
                     texts=val_texts, kpdrop_type=self.kpdrop, kpdrop_rate=self.kpdrop_rate)
+            elif self.kpappend is not None:
+                val_present_label_list, val_absent_label_list, val_present_texts, val_absent_texts = utils.kpappend(
+                    present_labels=val_present_label_list, absent_labels=val_absent_label_list,
+                    texts=val_texts, kpappend_type=self.kpappend, kpappend_rate=self.kpappend_rate)
             else:
                 val_present_texts = val_texts
                 val_absent_texts = val_texts.copy()
@@ -619,7 +640,7 @@ def store_label_word_num_map(wb, label_word_num_map, type):
         sheet['E' + str(id + 2)] = data_clean(label_word_num_map[i]['absent_ratio'])
 
 
-def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, shuffle):
+def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpappend, shuffle):
     texts = read_text(os.path.join(datadir, "X." + type + ".txt"))
     indexes = read_index(os.path.join(datadir, "Y." + type + ".txt"))
     label_map = load_map(os.path.join(datadir, "output-items.txt"))
@@ -650,6 +671,10 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, shu
             present_label_list, absent_label_list, present_texts, absent_texts = utils.kpdrop(
                 present_labels=present_label_list, absent_labels=absent_label_list,
                 texts=texts, kpdrop_type=kpdrop, kpdrop_rate=args.kpdrop_rate)
+        elif kpappend is not None:
+            present_label_list, absent_label_list, present_texts, absent_texts = utils.kpappend(
+                present_labels=present_label_list, absent_labels=absent_label_list,
+                texts=texts, kpappend_type=kpappend, kpappend_rate=args.kpappend_rate)
         else:
             present_texts = texts
             absent_texts = texts.copy()
@@ -703,9 +728,11 @@ def data_preprocess(args):
         os.mkdir(outputdir)
     else:
         return
+
     two = False
     if 'two' in args.kg_type:
         two = True
+
     if 'kpdrop_na' in args.kg_type:
         kpdrop = 'na'
     elif 'kpdrop_nr' in args.kg_type:
@@ -716,8 +743,21 @@ def data_preprocess(args):
         kpdrop = 'r'
     else:
         kpdrop = None
+
+    if 'kpappend_na' in args.kg_type:
+        kpappend = 'na'
+    elif 'kpappend_nr' in args.kg_type:
+        kpappend = 'nr'
+    elif 'kpappend_a' in args.kg_type:
+        kpappend = 'a'
+    elif 'kpappend_r' in args.kg_type:
+        kpappend = 'r'
+    else:
+        kpappend = None
+
     shuffle = False
     if 'shuffle' in args.kg_type:
         shuffle = True
-    split_present_absent_labels(args, datadir, 'trn', outputdir, two, kpdrop, shuffle)
-    split_present_absent_labels(args, datadir, 'tst', outputdir, two, kpdrop, shuffle)
+
+    split_present_absent_labels(args, datadir, 'trn', outputdir, two, kpdrop, kpappend, shuffle)
+    split_present_absent_labels(args, datadir, 'tst', outputdir, two, kpdrop, kpappend, shuffle)

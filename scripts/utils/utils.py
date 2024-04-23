@@ -90,6 +90,7 @@ def load_args() -> Namespace:
     parser.add_argument('--max_len', type=int, default=1024)  # ''tokenizer max length of document.
     parser.add_argument('--prefix_token_num', type=int, default=10)
     parser.add_argument('--kpdrop_rate', type=float, default=0.7)
+    parser.add_argument('--kpappend_rate', type=float, default=0.7)
     parser.add_argument('--match', type=str, default='exact', help='exact or stem match')
     parser.add_argument('--stem_lambda', type=float, default=0.5,
                         help='stem match: proportion of occurring words > lambda')
@@ -113,8 +114,8 @@ def load_args() -> Namespace:
                         help='learning rate')
     parser.add_argument('--kg_seed', type=int, default=44,
                         help='random seed (default: 1)')
-    #parser.add_argument('--kg_trn_data', type=str, default='Y.trn.txt')
-    #parser.add_argument('--kg_tst_data', type=str, default='Y.tst.txt')
+    # parser.add_argument('--kg_trn_data', type=str, default='Y.trn.txt')
+    # parser.add_argument('--kg_tst_data', type=str, default='Y.tst.txt')
 
     # perdicting args
     parser.add_argument('--is_kg_pred', type=int, default=1, help="whether predict")
@@ -279,7 +280,8 @@ def separate_present_absent_labels(indexes, labels_list, texts, match, stem_lamb
 
 def kpdrop(present_labels: list, absent_labels: list, texts: list, kpdrop_type, kpdrop_rate):
     l = len(texts)
-    present_texts, absent_texts = texts.copy(), texts.copy()
+    new_present_texts, new_absent_texts = texts.copy(), texts.copy()
+    new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
     for i in range(l):
         new_present_label, new_absent_label = [], absent_labels[i]
         new_text = texts[i]
@@ -294,30 +296,69 @@ def kpdrop(present_labels: list, absent_labels: list, texts: list, kpdrop_type, 
             else:
                 new_present_label.append(word)
         if kpdrop_type == 'a':
-            present_texts.append(new_text)
-            absent_texts.append(new_text)
-            present_labels.append(new_present_label)
-            absent_labels.append(new_absent_label)
+            new_present_texts.append(new_text)
+            new_absent_texts.append(new_text)
+            new_present_labels.append(new_present_label)
+            new_absent_labels.append(new_absent_label)
         elif kpdrop_type == 'r':
-            present_texts[i] = new_text
-            absent_texts[i] = new_text
-            present_labels[i] = new_present_label
-            absent_labels[i] = new_absent_label
+            new_present_texts[i] = new_text
+            new_absent_texts[i] = new_text
+            new_present_labels[i] = new_present_label
+            new_absent_labels[i] = new_absent_label
         elif kpdrop_type == 'na':
-            present_texts.append(texts[i])
-            absent_texts.append(new_text)
-            present_labels.append(present_labels[i])
-            absent_labels.append(new_absent_label)
+            new_present_texts.append(texts[i])
+            new_absent_texts.append(new_text)
+            new_present_labels.append(present_labels[i])
+            new_absent_labels.append(new_absent_label)
         elif kpdrop_type == 'nr':
-            # present_texts[i] = texts[i]
-            absent_texts[i] = new_text
-            # present_labels[i] = present_labels[i]
-            absent_labels[i] = new_absent_label
+            # new_present_texts[i] = texts[i]
+            new_absent_texts[i] = new_text
+            # new_present_labels[i] = present_labels[i]
+            new_absent_labels[i] = new_absent_label
 
-    return present_labels, absent_labels, present_texts, absent_texts
+    return new_present_labels, new_absent_labels, new_present_texts, new_absent_texts
 
 
 # 可以尝试一种新的kpdrop：用所有的present训练present，用所有的present+absent训练absent
+
+
+def kpappend(present_labels: list, absent_labels: list, texts: list, kpappend_type, kpappend_rate):
+    l = len(texts)
+    new_present_texts, new_absent_texts = texts.copy(), texts.copy()
+    new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
+    for i in range(l):
+        new_present_label, new_absent_label = present_labels[i], []
+        new_text: str = texts[i] + ". Topic: "
+        for word in absent_labels[i]:
+            if random.random() < kpappend_rate:
+                new_text = new_text + word + ", "
+                new_present_label.append(word)
+            else:
+                new_absent_label.append(word)
+        new_text = new_text.rstrip(', ')
+        new_text = new_text + '.'
+        if kpappend_type == 'a':
+            new_present_texts.append(new_text)
+            new_absent_texts.append(new_text)
+            new_present_labels.append(new_present_label)
+            new_absent_labels.append(new_absent_label)
+        elif kpappend_type == 'r':
+            new_present_texts[i] = new_text
+            new_absent_texts[i] = new_text
+            new_present_labels[i] = new_present_label
+            new_absent_labels[i] = new_absent_label
+        elif kpappend_type == 'na':
+            new_present_texts.append(texts[i])
+            new_absent_texts.append(new_text)
+            new_present_labels.append(new_present_label)
+            new_absent_labels.append(absent_labels[i])
+        elif kpappend_type == 'nr':
+            new_present_texts[i] = new_text
+            # new_absent_texts[i] = text
+            new_present_labels[i] = new_present_label
+            # new_absent_labels[i] = absent_labels[i]
+
+    return new_present_labels, new_absent_labels, new_present_texts, new_absent_texts
 
 
 def add_shuffle_examples(labels_list, texts):
