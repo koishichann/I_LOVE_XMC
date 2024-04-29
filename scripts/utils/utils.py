@@ -360,6 +360,7 @@ def kpappend(present_labels: list, absent_labels: list, texts: list, kpappend_ty
 
     return new_present_labels, new_absent_labels, new_present_texts, new_absent_texts
 
+#如需要kpappend和kpdrop同时使用，则应该都用nr选项
 
 def add_shuffle_examples(labels_list, texts):
     l = len(labels_list)

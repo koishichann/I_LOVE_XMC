@@ -299,14 +299,15 @@ class KG_Model(pl.LightningModule):
                 train_indexes, train_labels_list, train_texts, self.match, self.stem_lambda, self.stem_delta,
                 self.stem_model)
             self.store_label_word_num_map(self.train_label_word_num_map, 'train')
-            if self.kpdrop is not None:
-                train_present_label_list, train_absent_label_list, train_present_texts, train_absent_texts = utils.kpdrop(
-                    present_labels=train_present_label_list, absent_labels=train_absent_label_list,
-                    texts=train_texts, kpdrop_type=self.kpdrop, kpdrop_rate=self.kpdrop_rate)
-            elif self.kpappend is not None:
-                train_present_label_list, train_absent_label_list, train_present_texts, train_absent_texts = utils.kpappend(
-                    present_labels=train_present_label_list, absent_labels=train_absent_label_list,
-                    texts=train_texts, kpappend_type=self.kpappend, kpappend_rate=self.kpappend_rate)
+            if self.kpdrop is not None or self.kpappend is not None:
+                if self.kpdrop is not None:
+                    train_present_label_list, train_absent_label_list, train_present_texts, train_absent_texts = utils.kpdrop(
+                        present_labels=train_present_label_list, absent_labels=train_absent_label_list,
+                        texts=train_texts, kpdrop_type=self.kpdrop, kpdrop_rate=self.kpdrop_rate)
+                if self.kpappend is not None:
+                    train_present_label_list, train_absent_label_list, train_present_texts, train_absent_texts = utils.kpappend(
+                        present_labels=train_present_label_list, absent_labels=train_absent_label_list,
+                        texts=train_texts, kpappend_type=self.kpappend, kpappend_rate=self.kpappend_rate)
             else:
                 train_present_texts = train_texts
                 train_absent_texts = train_texts.copy()
@@ -373,14 +374,15 @@ class KG_Model(pl.LightningModule):
             val_present_label_list, val_absent_label_list, val_present_indexes, val_absent_indexes, self.val_present_ratio, self.val_absent_ratio, self.val_label_word_num_map = utils.separate_present_absent_labels(
                 val_indexes, val_labels_list, val_texts, self.match, self.stem_lambda, self.stem_delta, self.stem_model)
             self.store_label_word_num_map(self.val_label_word_num_map, 'val')
-            if self.kpdrop is not None:
-                val_present_label_list, val_absent_label_list, val_present_texts, val_absent_texts = utils.kpdrop(
-                    present_labels=val_present_label_list, absent_labels=val_absent_label_list,
-                    texts=val_texts, kpdrop_type=self.kpdrop, kpdrop_rate=self.kpdrop_rate)
-            elif self.kpappend is not None:
-                val_present_label_list, val_absent_label_list, val_present_texts, val_absent_texts = utils.kpappend(
-                    present_labels=val_present_label_list, absent_labels=val_absent_label_list,
-                    texts=val_texts, kpappend_type=self.kpappend, kpappend_rate=self.kpappend_rate)
+            if self.kpdrop is not None or self.kpappend is not None:
+                if self.kpdrop is not None:
+                    val_present_label_list, val_absent_label_list, val_present_texts, val_absent_texts = utils.kpdrop(
+                        present_labels=val_present_label_list, absent_labels=val_absent_label_list,
+                        texts=val_texts, kpdrop_type=self.kpdrop, kpdrop_rate=self.kpdrop_rate)
+                if self.kpappend is not None:
+                    val_present_label_list, val_absent_label_list, val_present_texts, val_absent_texts = utils.kpappend(
+                        present_labels=val_present_label_list, absent_labels=val_absent_label_list,
+                        texts=val_texts, kpappend_type=self.kpappend, kpappend_rate=self.kpappend_rate)
             else:
                 val_present_texts = val_texts
                 val_absent_texts = val_texts.copy()
@@ -667,14 +669,15 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpa
         wb = create_xlsx(xlsx_dir=xlsx_dir, type=type)
         store_label_word_num_map(wb, label_word_num_map, type)
         wb.save(xlsx_dir)
-        if kpdrop is not None:
-            present_label_list, absent_label_list, present_texts, absent_texts = utils.kpdrop(
-                present_labels=present_label_list, absent_labels=absent_label_list,
-                texts=texts, kpdrop_type=kpdrop, kpdrop_rate=args.kpdrop_rate)
-        elif kpappend is not None:
-            present_label_list, absent_label_list, present_texts, absent_texts = utils.kpappend(
-                present_labels=present_label_list, absent_labels=absent_label_list,
-                texts=texts, kpappend_type=kpappend, kpappend_rate=args.kpappend_rate)
+        if kpdrop is not None or kpappend is not None:
+            if kpdrop is not None:
+                present_label_list, absent_label_list, present_texts, absent_texts = utils.kpdrop(
+                    present_labels=present_label_list, absent_labels=absent_label_list,
+                    texts=texts, kpdrop_type=kpdrop, kpdrop_rate=args.kpdrop_rate)
+            if kpappend is not None:
+                present_label_list, absent_label_list, present_texts, absent_texts = utils.kpappend(
+                    present_labels=present_label_list, absent_labels=absent_label_list,
+                    texts=texts, kpappend_type=kpappend, kpappend_rate=args.kpappend_rate)
         else:
             present_texts = texts
             absent_texts = texts.copy()
