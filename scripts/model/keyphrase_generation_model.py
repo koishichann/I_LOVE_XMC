@@ -264,10 +264,10 @@ class KG_Model(pl.LightningModule):
         result = BatchEncoding(data=data, encoding=encodings, n_sequences=1)
         return result
 
-    def kind_dataloader(self, datadir, kind, type):
+    def kind_dataloader(self, datadir, kind, type, epoch):
         prefix = "Summary: "
-        texts = read_text(os.path.join(datadir, "X." + kind + '.' + type + ".txt"))
-        labels = read_text(os.path.join(datadir, "Y_mapped." + kind + '.' + type + ".txt"))
+        texts = read_text(os.path.join(datadir, "X." + kind + '.' + type + "." + str(epoch) + ".txt"))
+        labels = read_text(os.path.join(datadir, "Y_mapped." + kind + '.' + type + "." + str(epoch) + ".txt"))
         if 'wiki' in datadir:
             for id, label in enumerate(labels):
                 labels[id] = label.replace('_', ' ')
@@ -434,9 +434,9 @@ class KG_Model(pl.LightningModule):
             # create a dataloader for your training data here
             self.val_dataset = {'all': val_data}
 
-    def load_kind_data(self, datadir):
-        trn_data = self.kind_dataloader(datadir=datadir, kind=self.current_model, type='trn')
-        tst_data = self.kind_dataloader(datadir=datadir, kind=self.current_model, type='tst')
+    def load_kind_data(self, datadir, epoch):
+        trn_data = self.kind_dataloader(datadir=datadir, kind=self.current_model, type='trn', epoch=epoch)
+        tst_data = self.kind_dataloader(datadir=datadir, kind=self.current_model, type='tst', epoch=epoch)
         return trn_data, tst_data
 
     def load_data(self, datadir):
@@ -577,21 +577,29 @@ def kg_train(args):
     # model.load_data(datadir=utils.BASE_DATASET_DIR)
     # model.save_xlsx(xlsx_dir)
     if model.two:
+        present_early_stopping = EarlyStopping(monitor='present_loss', patience=3, mode='min')
+        absent_early_stopping = EarlyStopping(monitor='absent_loss', patience=3, mode='min')
         datadir = os.path.join(utils.KEYPHRASE_GENERATION_RECORDS_DIR, 'res', utils.KEYPHRASE_GENERATION_MODEL_NAME,
                                'preprocessed data')
-        present_trainer = pl.Trainer(max_epochs=args.kg_epoch,
-                                     callbacks=[checkpoint_callback, lr_callback],
-                                     accelerator="gpu", devices=1)
-        absent_trainer = pl.Trainer(max_epochs=args.kg_epoch,
-                                    callbacks=[checkpoint_callback, lr_callback],
-                                    accelerator="gpu", devices=1)
 
-        train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir)
-        present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
+        for e in range(args.kg_epoch):
+            present_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
+                                         1,
+                                         callbacks=[checkpoint_callback, lr_callback, present_early_stopping],
+                                         accelerator="gpu", devices=1)
+            train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
+            present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
+
         model.switch_present_and_absent()
 
-        train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir)
-        absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
+        for e in range(args.kg_epoch):
+            absent_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
+                                        1,
+                                        callbacks=[checkpoint_callback, lr_callback, absent_early_stopping],
+                                        accelerator="gpu", devices=1)
+            train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
+            absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
+
         model.switch_present_and_absent()
 
         # present_trainer.fit(model, train_dataloaders=model.train_dataset['present'],
@@ -642,7 +650,7 @@ def store_label_word_num_map(wb, label_word_num_map, type):
         sheet['E' + str(id + 2)] = data_clean(label_word_num_map[i]['absent_ratio'])
 
 
-def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpappend, shuffle):
+def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpappend, shuffle, epoch):
     texts = read_text(os.path.join(datadir, "X." + type + ".txt"))
     indexes = read_index(os.path.join(datadir, "Y." + type + ".txt"))
     label_map = load_map(os.path.join(datadir, "output-items.txt"))
@@ -669,45 +677,55 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpa
         wb = create_xlsx(xlsx_dir=xlsx_dir, type=type)
         store_label_word_num_map(wb, label_word_num_map, type)
         wb.save(xlsx_dir)
-        if kpdrop is not None or kpappend is not None:
-            if kpdrop is not None:
-                present_label_list, absent_label_list, present_texts, absent_texts = utils.kpdrop(
-                    present_labels=present_label_list, absent_labels=absent_label_list,
-                    texts=texts, kpdrop_type=kpdrop, kpdrop_rate=args.kpdrop_rate)
-            if kpappend is not None:
-                present_label_list, absent_label_list, present_texts, absent_texts = utils.kpappend(
-                    present_labels=present_label_list, absent_labels=absent_label_list,
-                    texts=texts, kpappend_type=kpappend, kpappend_rate=args.kpappend_rate)
-        else:
-            present_texts = texts
-            absent_texts = texts.copy()
-        if shuffle:
-            utils.add_shuffle_examples(present_label_list, present_texts)
-            utils.add_shuffle_examples(absent_label_list, absent_texts)
-        present_labels, absent_labels = [], []
-        for i in present_label_list:
-            present_labels.append(", ".join(i))  # 是否加prefix
-        for i in absent_label_list:
-            absent_labels.append(", ".join(i))  # 是否加prefix
 
-        with open(os.path.join(outputdir, "X.present." + type + ".txt"), 'w+', encoding='utf-8', errors='ignore') as f:
-            for i in present_texts:
-                f.write(i)
-                f.write('\n')
-        with open(os.path.join(outputdir, "Y_mapped.present." + type + ".txt"), 'w+', encoding='utf-8',
-                  errors='ignore') as f:
-            for i in present_labels:
-                f.write(i)
-                f.write('\n')
-        with open(os.path.join(outputdir, "X.absent." + type + ".txt"), 'w+', encoding='utf-8', errors='ignore') as f:
-            for i in absent_texts:
-                f.write(i)
-                f.write('\n')
-        with open(os.path.join(outputdir, "Y_mapped.absent." + type + ".txt"), 'w+', encoding='utf-8',
-                  errors='ignore') as f:
-            for i in absent_labels:
-                f.write(i)
-                f.write('\n')
+        for e in range(epoch):
+            temp_present_label_list, temp_absent_label_list = present_label_list.copy(), absent_label_list.copy()
+            temp_present_texts, temp_absent_texts = texts.copy(), texts.copy()
+            if kpdrop is not None or kpappend is not None:
+                if kpdrop is not None:
+                    temp_present_label_list, temp_absent_label_list, temp_present_texts, temp_absent_texts = utils.kpdrop(
+                        present_labels=temp_present_label_list, absent_labels=temp_absent_label_list,
+                        present_texts=temp_present_texts, absent_texts=temp_absent_texts,
+                        texts=texts, kpdrop_type=kpdrop, kpdrop_rate=args.kpdrop_rate)
+                if kpappend is not None:
+                    temp_present_label_list, temp_absent_label_list, temp_present_texts, temp_absent_texts = utils.kpappend(
+                        present_labels=temp_present_label_list, absent_labels=temp_absent_label_list,
+                        present_texts=temp_present_texts, absent_texts=temp_absent_texts,
+                        texts=texts, kpappend_type=kpappend, kpappend_rate=args.kpappend_rate)
+            else:
+                temp_present_texts = texts
+                temp_absent_texts = texts.copy()
+            if shuffle:
+                utils.add_shuffle_examples(temp_present_label_list, temp_present_texts)
+                utils.add_shuffle_examples(temp_absent_label_list, temp_absent_texts)
+            present_labels, absent_labels = [], []
+            for i in temp_present_label_list:
+                present_labels.append(", ".join(i))  # 是否加prefix
+            for i in temp_absent_label_list:
+                absent_labels.append(", ".join(i))  # 是否加prefix
+
+            with open(os.path.join(outputdir, "X.present." + type + "." + str(e) + ".txt"), 'w+', encoding='utf-8',
+                      errors='ignore') as f:
+                for i in temp_present_texts:
+                    f.write(i)
+                    f.write('\n')
+            with open(os.path.join(outputdir, "Y_mapped.present." + type + "." + str(e) + ".txt"), 'w+',
+                      encoding='utf-8',
+                      errors='ignore') as f:
+                for i in present_labels:
+                    f.write(i)
+                    f.write('\n')
+            with open(os.path.join(outputdir, "X.absent." + type + "." + str(e) + ".txt"), 'w+', encoding='utf-8',
+                      errors='ignore') as f:
+                for i in temp_absent_texts:
+                    f.write(i)
+                    f.write('\n')
+            with open(os.path.join(outputdir, "Y_mapped.absent." + type + "." + str(e) + ".txt"), 'w+',
+                      encoding='utf-8',
+                      errors='ignore') as f:
+                for i in absent_labels:
+                    f.write(i)
+                    f.write('\n')
     else:
         labels = []
         for i in labels_list:
@@ -762,5 +780,5 @@ def data_preprocess(args):
     if 'shuffle' in args.kg_type:
         shuffle = True
 
-    split_present_absent_labels(args, datadir, 'trn', outputdir, two, kpdrop, kpappend, shuffle)
-    split_present_absent_labels(args, datadir, 'tst', outputdir, two, kpdrop, kpappend, shuffle)
+    split_present_absent_labels(args, datadir, 'trn', outputdir, two, kpdrop, kpappend, shuffle, args.kg_epoch)
+    split_present_absent_labels(args, datadir, 'tst', outputdir, two, kpdrop, kpappend, shuffle, args.kg_epoch)

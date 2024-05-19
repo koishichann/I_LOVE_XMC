@@ -278,9 +278,9 @@ def separate_present_absent_labels(indexes, labels_list, texts, match, stem_lamb
     return present_labels, absent_labels, present_indexes, absent_indexes, present_ratio, absent_ratio, label_word_num_map
 
 
-def kpdrop(present_labels: list, absent_labels: list, texts: list, kpdrop_type, kpdrop_rate):
+def kpdrop(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpdrop_type, kpdrop_rate):
     l = len(texts)
-    new_present_texts, new_absent_texts = texts.copy(), texts.copy()
+    new_present_texts, new_absent_texts = present_texts.copy(), absent_texts.copy()
     new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
     for i in range(l):
         new_present_label, new_absent_label = [], absent_labels[i]
@@ -322,9 +322,9 @@ def kpdrop(present_labels: list, absent_labels: list, texts: list, kpdrop_type, 
 # 可以尝试一种新的kpdrop：用所有的present训练present，用所有的present+absent训练absent
 
 
-def kpappend(present_labels: list, absent_labels: list, texts: list, kpappend_type, kpappend_rate):
+def kpappend(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpappend_type, kpappend_rate):
     l = len(texts)
-    new_present_texts, new_absent_texts = texts.copy(), texts.copy()
+    new_present_texts, new_absent_texts = present_texts.copy(), absent_texts.copy()
     new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
     for i in range(l):
         new_present_label, new_absent_label = present_labels[i], []

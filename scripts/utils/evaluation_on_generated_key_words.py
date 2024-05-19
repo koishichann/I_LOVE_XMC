@@ -7,7 +7,13 @@ running_args = ['bart=5-stem-0.5-0.5',
                 'two-bart-kpdrop_a=5-0.7-stem-0.5-0.5',
                 'two-bart-kpdrop_r=5-0.7-stem-0.5-0.5',
                 'two-bart-kpdrop_na=5-0.7-stem-0.5-0.5',
-                'two-bart-kpdrop_nr=5-0.7-stem-0.5-0.5']
+                'two-bart-kpdrop_nr=5-0.7-stem-0.5-0.5',
+                'two-bart-kpappend_a=5-stem-0.5-0.5',
+                'two-bart-kpappend_r=5-stem-0.5-0.5',
+                'two-bart-kpappend_na=5-stem-0.5-0.5',
+                'two-bart-kpappend_nr=5-stem-0.5-0.5',
+                'two-bart-kpdrop_nr-kpappend_nr=5-0.7-stem-0.5-0.5'
+                ]
 
 for running_arg in running_args:
     pred_dir = os.path.join('..', '..', 'dataset', dataset, 'records', 'keyphrase_generation', 'res',
