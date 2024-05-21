@@ -577,8 +577,8 @@ def kg_train(args):
     # model.load_data(datadir=utils.BASE_DATASET_DIR)
     # model.save_xlsx(xlsx_dir)
     if model.two:
-        present_early_stopping = EarlyStopping(monitor='present_loss', patience=3, mode='min')
-        absent_early_stopping = EarlyStopping(monitor='absent_loss', patience=3, mode='min')
+        present_early_stopping = EarlyStopping(monitor='present_val_loss', patience=3, mode='min')
+        absent_early_stopping = EarlyStopping(monitor='absent_val_loss', patience=3, mode='min')
         datadir = os.path.join(utils.KEYPHRASE_GENERATION_RECORDS_DIR, 'res', utils.KEYPHRASE_GENERATION_MODEL_NAME,
                                'preprocessed data')
 
