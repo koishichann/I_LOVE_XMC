@@ -52,6 +52,8 @@ def update_constants(args):
         KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.prefix_token_num)
     if 'kpdrop' in args.kg_type:
         KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.kpdrop_rate)
+    if 'kpappend' in args.kg_type:
+        KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.kpappend_rate)
     KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.match)
     if 'stem' in args.match:
         KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.stem_lambda) + '-' + str(
