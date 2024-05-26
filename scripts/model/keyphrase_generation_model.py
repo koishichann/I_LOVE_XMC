@@ -583,6 +583,7 @@ def kg_train(args):
                                'preprocessed data')
 
         for e in range(args.kg_epoch):
+            torch.cuda.empty_cache()
             present_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
                                          1,
                                          callbacks=[checkpoint_callback, lr_callback, present_early_stopping],
@@ -593,6 +594,7 @@ def kg_train(args):
         model.switch_present_and_absent()
 
         for e in range(args.kg_epoch):
+            torch.cuda.empty_cache()
             absent_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
                                         1,
                                         callbacks=[checkpoint_callback, lr_callback, absent_early_stopping],
@@ -618,6 +620,7 @@ def kg_train(args):
                              accelerator="gpu", devices=1)
 
         model.load_data(datadir=datadir)
+        torch.cuda.empty_cache()
         trainer.fit(model, train_dataloaders=model.train_dataset['all'],
                     val_dataloaders=model.val_dataset['all'])
 
