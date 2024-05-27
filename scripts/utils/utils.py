@@ -52,8 +52,8 @@ def update_constants(args):
         KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.prefix_token_num)
     if 'kpdrop' in args.kg_type:
         KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.kpdrop_rate)
-    if 'kpappend' in args.kg_type:
-        KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.kpappend_rate)
+    if 'kpinsert' in args.kg_type:
+        KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.kpinsert_rate)
     KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.match)
     if 'stem' in args.match:
         KEYPHRASE_GENERATION_MODEL_NAME = KEYPHRASE_GENERATION_MODEL_NAME + '-' + str(args.stem_lambda) + '-' + str(
@@ -92,7 +92,7 @@ def load_args() -> Namespace:
     parser.add_argument('--max_len', type=int, default=1024)  # ''tokenizer max length of document.
     parser.add_argument('--prefix_token_num', type=int, default=10)
     parser.add_argument('--kpdrop_rate', type=float, default=0.7)
-    parser.add_argument('--kpappend_rate', type=float, default=0.7)
+    parser.add_argument('--kpinsert_rate', type=float, default=0.7)
     parser.add_argument('--match', type=str, default='exact', help='exact or stem match')
     parser.add_argument('--stem_lambda', type=float, default=0.5,
                         help='stem match: proportion of occurring words > lambda')
@@ -324,37 +324,37 @@ def kpdrop(present_labels: list, absent_labels: list, present_texts: list, absen
 # 可以尝试一种新的kpdrop：用所有的present训练present，用所有的present+absent训练absent
 
 
-def kpappend(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpappend_type, kpappend_rate):
+def kpinsert(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpinsert_type, kpinsert_rate):
     l = len(texts)
     new_present_texts, new_absent_texts = present_texts.copy(), absent_texts.copy()
     new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
     for i in range(l):
         new_present_label, new_absent_label = present_labels[i], []
-        new_text: str = texts[i] + ". Topic: "
+        new_text: str = "Topic: "
         for word in absent_labels[i]:
-            if random.random() < kpappend_rate:
+            if random.random() < kpinsert_rate:
                 new_text = new_text + word + ", "
                 new_present_label.append(word)
             else:
                 new_absent_label.append(word)
         new_text = new_text.rstrip(', ')
-        new_text = new_text + '.'
-        if kpappend_type == 'a':
+        new_text = new_text + '. ' + texts[i]
+        if kpinsert_type == 'a':
             new_present_texts.append(new_text)
             new_absent_texts.append(new_text)
             new_present_labels.append(new_present_label)
             new_absent_labels.append(new_absent_label)
-        elif kpappend_type == 'r':
+        elif kpinsert_type == 'r':
             new_present_texts[i] = new_text
             new_absent_texts[i] = new_text
             new_present_labels[i] = new_present_label
             new_absent_labels[i] = new_absent_label
-        elif kpappend_type == 'na':
+        elif kpinsert_type == 'na':
             new_present_texts.append(texts[i])
             new_absent_texts.append(new_text)
             new_present_labels.append(new_present_label)
             new_absent_labels.append(absent_labels[i])
-        elif kpappend_type == 'nr':
+        elif kpinsert_type == 'nr':
             new_present_texts[i] = new_text
             # new_absent_texts[i] = text
             new_present_labels[i] = new_present_label
@@ -362,7 +362,7 @@ def kpappend(present_labels: list, absent_labels: list, present_texts: list, abs
 
     return new_present_labels, new_absent_labels, new_present_texts, new_absent_texts
 
-#如需要kpappend和kpdrop同时使用，则应该都用nr选项
+#如需要kpinsert和kpdrop同时使用，则应该都用nr选项
 
 def add_shuffle_examples(labels_list, texts):
     l = len(labels_list)

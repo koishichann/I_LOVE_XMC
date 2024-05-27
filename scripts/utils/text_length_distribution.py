@@ -23,7 +23,8 @@ for dataset in datasets:
         space_num = Counter(text)[' ']
         word_num = space_num + 1
         if word_num >= 1000:
-            continue
+            word_num = 1000
+            # continue
         id = word_num // divide
         total = total + 1
         while len(word_count) <= id:
@@ -33,6 +34,7 @@ for dataset in datasets:
         word_count[id] = word_count[id] + 1
     word_counts.append(word_count)
     totals.append(total)
+word_range[-1] = ">1000"
 for id, word_count in enumerate(word_counts):
     while len(word_count) < len(word_range):
         word_count.append(0)
