@@ -590,7 +590,7 @@ def kg_train(args):
                                          accelerator="gpu", devices=1)
             train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
             present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
-
+            del present_trainer
         model.switch_present_and_absent()
 
         for e in range(args.kg_epoch):
@@ -601,7 +601,7 @@ def kg_train(args):
                                         accelerator="gpu", devices=1)
             train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
             absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
-
+            del absent_trainer
         model.switch_present_and_absent()
 
         # present_trainer.fit(model, train_dataloaders=model.train_dataset['present'],
