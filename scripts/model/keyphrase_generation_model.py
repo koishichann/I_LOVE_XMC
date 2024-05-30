@@ -24,10 +24,22 @@ import re
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
+def valid_xml_char_ordinal(c):
+    codepoint = ord(c)
+    # conditions ordered by presumed frequency
+    return (
+            0x20 <= codepoint <= 0xD7FF or
+            codepoint in (0x9, 0xA, 0xD) or
+            0xE000 <= codepoint <= 0xFFFD or
+            0x10000 <= codepoint <= 0x10FFFF
+    )
+
+
 def data_clean(text):
     # 清洗excel中的非法字符，都是不常见的不可显示字符，例如退格，响铃等
     ILLEGAL_CHARACTERS_RE = re.compile(r'[\000-\010]|[\013-\014]|[\016-\037]')
     text = ILLEGAL_CHARACTERS_RE.sub(r'', str(text))
+    text = ''.join(c for c in text if valid_xml_char_ordinal(c))
     return text
 
 
@@ -586,7 +598,7 @@ def kg_train(args):
             torch.cuda.empty_cache()
             present_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
                                          1,
-                                         #callbacks=[checkpoint_callback, lr_callback, present_early_stopping],
+                                         # callbacks=[checkpoint_callback, lr_callback, present_early_stopping],
                                          accelerator="gpu", devices=1)
             train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
             present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
@@ -597,7 +609,7 @@ def kg_train(args):
             torch.cuda.empty_cache()
             absent_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
                                         1,
-                                        #callbacks=[checkpoint_callback, lr_callback, absent_early_stopping],
+                                        # callbacks=[checkpoint_callback, lr_callback, absent_early_stopping],
                                         accelerator="gpu", devices=1)
             train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
             absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
