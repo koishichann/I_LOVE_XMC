@@ -744,7 +744,7 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpi
                     f.write('\n')
             with open(os.path.join(outputdir, "overflow.txt"), 'w+', encoding='utf-8',
                       errors='ignore') as f:
-                f.write(overflow_ratio)
+                f.write(str(overflow_ratio))
     else:
         labels = []
         for i in labels_list:
