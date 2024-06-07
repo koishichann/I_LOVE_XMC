@@ -280,7 +280,8 @@ def separate_present_absent_labels(indexes, labels_list, texts, match, stem_lamb
     return present_labels, absent_labels, present_indexes, absent_indexes, present_ratio, absent_ratio, label_word_num_map
 
 
-def kpdrop(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpdrop_type, kpdrop_rate):
+def kpdrop(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpdrop_type,
+           kpdrop_rate):
     l = len(texts)
     new_present_texts, new_absent_texts = present_texts.copy(), absent_texts.copy()
     new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
@@ -324,10 +325,13 @@ def kpdrop(present_labels: list, absent_labels: list, present_texts: list, absen
 # 可以尝试一种新的kpdrop：用所有的present训练present，用所有的present+absent训练absent
 
 
-def kpinsert(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list, kpinsert_type, kpinsert_rate):
+def kpinsert(present_labels: list, absent_labels: list, present_texts: list, absent_texts: list, texts: list,
+             kpinsert_type, kpinsert_rate, max_len):
     l = len(texts)
     new_present_texts, new_absent_texts = present_texts.copy(), absent_texts.copy()
     new_present_labels, new_absent_labels = present_labels.copy(), absent_labels.copy()
+    overflow = 0.0
+    no_overflow = 0.0
     for i in range(l):
         new_present_label, new_absent_label = present_labels[i], []
         new_text: str = "Topic: "
@@ -338,6 +342,10 @@ def kpinsert(present_labels: list, absent_labels: list, present_texts: list, abs
             else:
                 new_absent_label.append(word)
         new_text = new_text.rstrip(', ')
+        if len(new_text) > max_len:
+            overflow = overflow + 1.0
+        else:
+            no_overflow = no_overflow + 1.0
         new_text = new_text + '. ' + texts[i]
         if kpinsert_type == 'a':
             new_present_texts.append(new_text)
@@ -360,9 +368,11 @@ def kpinsert(present_labels: list, absent_labels: list, present_texts: list, abs
             new_present_labels[i] = new_present_label
             # new_absent_labels[i] = absent_labels[i]
 
-    return new_present_labels, new_absent_labels, new_present_texts, new_absent_texts
+    return new_present_labels, new_absent_labels, new_present_texts, new_absent_texts, overflow / (
+                overflow + no_overflow)
 
-#如需要kpinsert和kpdrop同时使用，则应该都用nr选项
+
+# 如需要kpinsert和kpdrop同时使用，则应该都用nr选项
 
 def add_shuffle_examples(labels_list, texts):
     l = len(labels_list)

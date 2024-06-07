@@ -670,6 +670,7 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpi
     indexes = read_index(os.path.join(datadir, "Y." + type + ".txt"))
     label_map = load_map(os.path.join(datadir, "output-items.txt"))
     labels_list = transfer_indexs_to_labels(label_map, indexes)  # list,需要转化成text
+    overflow_ratio = 0.0
     if 'wiki' in datadir:
         for id1, label_list in enumerate(labels_list):
             for id2, label in enumerate(label_list):
@@ -703,10 +704,10 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpi
                         present_texts=temp_present_texts, absent_texts=temp_absent_texts,
                         texts=texts, kpdrop_type=kpdrop, kpdrop_rate=args.kpdrop_rate)
                 if kpinsert is not None:
-                    temp_present_label_list, temp_absent_label_list, temp_present_texts, temp_absent_texts = utils.kpinsert(
+                    temp_present_label_list, temp_absent_label_list, temp_present_texts, temp_absent_texts, overflow_ratio = utils.kpinsert(
                         present_labels=temp_present_label_list, absent_labels=temp_absent_label_list,
                         present_texts=temp_present_texts, absent_texts=temp_absent_texts,
-                        texts=texts, kpinsert_type=kpinsert, kpinsert_rate=args.kpinsert_rate)
+                        texts=texts, kpinsert_type=kpinsert, kpinsert_rate=args.kpinsert_rate, max_len=args.max_len)
             else:
                 temp_present_texts = texts
                 temp_absent_texts = texts.copy()
@@ -741,6 +742,9 @@ def split_present_absent_labels(args, datadir, type, outputdir, two, kpdrop, kpi
                 for i in absent_labels:
                     f.write(i)
                     f.write('\n')
+            with open(os.path.join(outputdir, "overflow.txt"), 'w+', encoding='utf-8',
+                      errors='ignore') as f:
+                f.write(overflow_ratio)
     else:
         labels = []
         for i in labels_list:
