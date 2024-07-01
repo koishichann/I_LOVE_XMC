@@ -21,7 +21,7 @@ def combine_train(model_name, model_save_dir, data_dir, num_epoch, batch_size):
     train_loss = losses.MultipleNegativesRankingLoss(model)
     train_data_un = [InputExample(texts=[i, i]) for m in label_list for i in m]
     # train_dataloader_un = DataLoader(fine_tune_unsup, shuffle=True, batch_size=batch_size)
-    train_dataloader = DataLoader(train_data_un, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(train_data_un, batch_size=batch_size, shuffle=True, num_workers=8)
     warmup_steps = math.ceil(len(train_dataloader) * num_epoch * 0.1)  # 10% of train data for warm-up
     #   logger.info("Warmup-steps: {}".format(warmup_steps))
     model.fit(train_objectives=[(train_dataloader, train_loss)],

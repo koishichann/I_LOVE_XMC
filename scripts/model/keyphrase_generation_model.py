@@ -295,7 +295,7 @@ class KG_Model(pl.LightningModule):
         decodings = self.tokenizer(labels, truncation=True, padding=True)
 
         dataset_tokenized = MyData(encodings, decodings)
-        data = DataLoader(dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+        data = DataLoader(dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
         return data
 
     def train_dataloader(self, datadir):
@@ -348,9 +348,9 @@ class KG_Model(pl.LightningModule):
             present_dataset_tokenized = MyData(present_encodings, present_decodings)
             absent_dataset_tokenized = MyData(absent_encodings, absent_decodings)
             present_train_data = DataLoader(
-                present_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+                present_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
             absent_train_data = DataLoader(
-                absent_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+                absent_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
             self.train_dataset = {'present': present_train_data, 'absent': absent_train_data}
         else:
             train_labels = []
@@ -369,7 +369,7 @@ class KG_Model(pl.LightningModule):
 
             dataset_tokenized = MyData(encodings, decodings)
             train_data = DataLoader(
-                dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+                dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
             self.train_dataset = {'all': train_data}
         # create a dataloader for your training data here
 
@@ -422,9 +422,9 @@ class KG_Model(pl.LightningModule):
             present_dataset_tokenized = MyData(present_encodings, present_decodings)
             absent_dataset_tokenized = MyData(absent_encodings, absent_decodings)
             present_val_data = DataLoader(
-                present_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+                present_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
             absent_val_data = DataLoader(
-                absent_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+                absent_dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
             self.val_dataset = {'present': present_val_data, 'absent': absent_val_data}
         else:
             val_labels = []
@@ -442,7 +442,7 @@ class KG_Model(pl.LightningModule):
 
             dataset_tokenized = MyData(encodings, decodings)
             val_data = DataLoader(
-                dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True)
+                dataset_tokenized, batch_size=self.batch_size, collate_fn=lambda x: x, shuffle=True, num_workers=8)
             # create a dataloader for your training data here
             self.val_dataset = {'all': val_data}
 
@@ -543,7 +543,7 @@ def kg_predict(model, args, type):
         if id > 100000:
             break
         sheet['A' + str(id + 2)] = data_clean(i)
-    dataloader = DataLoader(doc_list, batch_size=data_size)
+    dataloader = DataLoader(doc_list, batch_size=data_size, num_workers=8)
     tokenizer = model.tokenizer
 
     with open(output_dir, 'w+', encoding='utf-8', errors='ignore') as t:
