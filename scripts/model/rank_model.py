@@ -70,7 +70,7 @@ def rank_train(args, type):
     num_epoch = epochs
     if re.match('\w*cross-encoder\w*', model_name, re.I):
         model = CrossEncoder(model_name, num_labels=1)
-        train_dataloader = DataLoader(fine_tune_list, shuffle=True, batch_size=batch_size, num_workers=8)
+        train_dataloader = DataLoader(fine_tune_list, shuffle=True, batch_size=batch_size)
         # shuffle=True
         print("batch_size=", batch_size)
         # Configure the training
@@ -90,7 +90,7 @@ def rank_train(args, type):
             model = SentenceTransformer(model_name_or_path=model_name, device=device)
             train_loss = losses.MultipleNegativesRankingLoss(model)
             # train_dataloader_un = DataLoader(fine_tune_unsup, shuffle=True, batch_size=batch_size)
-            train_dataloader = DataLoader(train_data_un, batch_size=64, shuffle=True, num_workers=8)
+            train_dataloader = DataLoader(train_data_un, batch_size=64, shuffle=True)
             warmup_steps = math.ceil(len(train_dataloader) * num_epoch * 0.1)  # 10% of train data for warm-up
             #   logger.info("Warmup-steps: {}".format(warmup_steps))
 
@@ -109,7 +109,7 @@ def rank_train(args, type):
         model = SentenceTransformer(model_name, device=device)
         train_loss = losses.CosineSimilarityLoss(model)
         # model = SentenceTransformer('all-MiniLM-L6-v2')
-    train_dataloader = DataLoader(fine_tune_list, shuffle=True, batch_size=batch_size, num_workers=8)
+    train_dataloader = DataLoader(fine_tune_list, shuffle=True, batch_size=batch_size)
     # evaluator = evaluation.EmbeddingSimilarityEvaluator()
     shuffle = True
     # print("batch_size="+ "24")

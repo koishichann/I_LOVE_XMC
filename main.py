@@ -28,7 +28,6 @@ def run(args):
     wandb.init(project="I_Love_XMC", name=platform.node() + ':' + args.dataset + ' ' + str(datetime.datetime.now()),
                notes=str(args))
     torch.cuda.empty_cache()
-    torch.multiprocessing.set_start_method('spawn')
 
     if not os.path.exists(path=os.path.join(utils.BASE_RECORD_DIR)):
         os.mkdir(path=os.path.join(utils.BASE_RECORD_DIR))
