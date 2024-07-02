@@ -6,7 +6,7 @@ import os
 from transformers import (PegasusTokenizerFast, PegasusTokenizer, BartForConditionalGeneration,
                           PegasusForConditionalGeneration, T5Tokenizer, T5ForConditionalGeneration,
                           AutoTokenizer, AutoModel, BartTokenizer, MBartForConditionalGeneration, MBart50TokenizerFast,
-                          GPT2Tokenizer, GPT2Model, BatchEncoding
+                          GPT2Tokenizer, GPT2Model, BatchEncoding, BartTokenizerFast
                           )
 import torch
 from torch.utils.data import DataLoader
@@ -179,7 +179,7 @@ class KG_Model(pl.LightningModule):
                     prefix_bart_model.freeze_module(exclude=['deltas', 'layernorm_embedding'], set_state_dict=True)
                     prefix_bart_model.log()
                 # Visualization(self.model).structure_graph()
-            self.tokenizer = BartTokenizer.from_pretrained(self.model_name, model_max_length=self.max_len)
+            self.tokenizer = BartTokenizerFast.from_pretrained(self.model_name, model_max_length=self.max_len)
         elif 't5' in self.type:
             self.model = T5ForConditionalGeneration.from_pretrained(self.model_name).to(device)
             self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, model_max_length=self.max_len)
