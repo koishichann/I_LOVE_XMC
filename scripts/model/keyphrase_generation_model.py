@@ -594,28 +594,33 @@ def kg_train(args):
         datadir = os.path.join(utils.KEYPHRASE_GENERATION_RECORDS_DIR, 'res', utils.KEYPHRASE_GENERATION_MODEL_NAME,
                                'preprocessed data')
 
-        for e in range(args.kg_epoch):
-            torch.cuda.empty_cache()
-            present_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
-                                         1,
-                                         callbacks=[checkpoint_callback, lr_callback, present_early_stopping],
-                                         accelerator="gpu", devices=1)
-            train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
-            present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
-            del present_trainer, train_dataloaders, val_dataloaders
-        model.switch_present_and_absent()
+        if not os.path.exists(model_dir + '_present'):
+            for e in range(args.kg_epoch):
+                torch.cuda.empty_cache()
+                present_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
+                                             1,
+                                             callbacks=[checkpoint_callback, lr_callback, present_early_stopping],
+                                             accelerator="gpu", devices=1)
+                train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
+                present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
+                del present_trainer, train_dataloaders, val_dataloaders
+            model.switch_present_and_absent()
+            print(f'save model in {model_dir}')
+            torch.save(model.present_model.state_dict(), model_dir + '_present')
 
-        for e in range(args.kg_epoch):
-            torch.cuda.empty_cache()
-            absent_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
-                                        1,
-                                        callbacks=[checkpoint_callback, lr_callback, absent_early_stopping],
-                                        accelerator="gpu", devices=1)
-            train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
-            absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
-            del absent_trainer, train_dataloaders, val_dataloaders
-        model.switch_present_and_absent()
-
+        if not os.path.exists(model_dir + '_absent'):
+            for e in range(args.kg_epoch):
+                torch.cuda.empty_cache()
+                absent_trainer = pl.Trainer(max_epochs=  # args.kg_epoch,
+                                            1,
+                                            callbacks=[checkpoint_callback, lr_callback, absent_early_stopping],
+                                            accelerator="gpu", devices=1)
+                train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
+                absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
+                del absent_trainer, train_dataloaders, val_dataloaders
+            model.switch_present_and_absent()
+            print(f'save model in {model_dir}')
+            torch.save(model.absent_model.state_dict(), model_dir + '_absent')
         # present_trainer.fit(model, train_dataloaders=model.train_dataset['present'],
         #                     val_dataloaders=model.val_dataset['present'])
         # model.switch_present_and_absent()
@@ -623,9 +628,7 @@ def kg_train(args):
         #                    val_dataloaders=model.val_dataset['absent'])
         # model.switch_present_and_absent()
 
-        print(f'save model in {model_dir}')
-        torch.save(model.present_model.state_dict(), model_dir + '_present')
-        torch.save(model.absent_model.state_dict(), model_dir + '_absent')
+
     else:
         datadir = utils.BASE_DATASET_DIR
         trainer = pl.Trainer(max_epochs=args.kg_epoch, callbacks=[checkpoint_callback, lr_callback],
