@@ -179,7 +179,7 @@ class KG_Model(pl.LightningModule):
                     prefix_bart_model.freeze_module(exclude=['deltas', 'layernorm_embedding'], set_state_dict=True)
                     prefix_bart_model.log()
                 # Visualization(self.model).structure_graph()
-            self.tokenizer = BartTokenizerFast.from_pretrained(self.model_name, model_max_length=self.max_len)
+            self.tokenizer = BartTokenizer.from_pretrained(self.model_name, model_max_length=self.max_len)
         elif 't5' in self.type:
             self.model = T5ForConditionalGeneration.from_pretrained(self.model_name).to(device)
             self.tokenizer = T5Tokenizer.from_pretrained(self.model_name, model_max_length=self.max_len)
@@ -604,10 +604,10 @@ def kg_train(args):
                 train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
                 present_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
                 del present_trainer, train_dataloaders, val_dataloaders
-            model.switch_present_and_absent()
+
             print(f'save model in {model_dir}')
             torch.save(model.present_model.state_dict(), model_dir + '_present')
-
+        model.switch_present_and_absent()
         if not os.path.exists(model_dir + '_absent'):
             for e in range(args.kg_epoch):
                 torch.cuda.empty_cache()
@@ -618,9 +618,9 @@ def kg_train(args):
                 train_dataloaders, val_dataloaders = model.load_kind_data(datadir=datadir, epoch=e)
                 absent_trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders)
                 del absent_trainer, train_dataloaders, val_dataloaders
-            model.switch_present_and_absent()
             print(f'save model in {model_dir}')
             torch.save(model.absent_model.state_dict(), model_dir + '_absent')
+        model.switch_present_and_absent()
         # present_trainer.fit(model, train_dataloaders=model.train_dataset['present'],
         #                     val_dataloaders=model.val_dataset['present'])
         # model.switch_present_and_absent()
